@@ -1,22 +1,15 @@
-CC = gcc
-CFLAGS = -I.
-TARGET = writer
-SRCS = writer.c
-OBJS = writer.o
+CROSS_COMPILE = 
+CROSS_COMPILE = x86_64-linux-gnu-
 
-# Build rule for native platform
-$(TARGET): $(OBJS)
-    $(CC) $(CFLAGS) -o $@ $^
+CC=$(CROSS_COMPILE)gcc
+TARGET := writer
+SRCS := writer.c
+OBJS := writer.o
 
-# Build rule for cross-compilation
-aarch64-none-linux-gnu-%: CROSS_COMPILE := aarch64-none-linux-gnu-
-aarch64-none-linux-gnu-%: $(OBJS)
-    $(CROSS_COMPILE)$(CC) $(CFLAGS) -o $@ $^
+all: $(TARGET)
 
-%.o: %.c
-    $(CC) $(CFLAGS) -c -o $@ $<
-
-.PHONY: clean
+writer: $(OBJS)
 
 clean:
-    rm -f $(TARGET) $(OBJS)
+	$(RM) $(TARGET) 
+    
