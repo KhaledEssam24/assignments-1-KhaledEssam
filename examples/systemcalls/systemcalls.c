@@ -16,7 +16,7 @@ bool do_system(const char *cmd)
      *   and return a boolean true if the system() call completed with success
      *   or false() if it returned a failure
      */
-    if (system(cmd) < 0)
+    if (system(cmd))
     {
         return false;
     }
@@ -59,26 +59,21 @@ bool do_exec(int count, ...)
      *
      */
 
-    int res = fork();
-    if (res < 0)
+    pid_t pid = fork();
+    int status_wait;
+    if (!pid)
     {
-        return false;
-    }
-    else if (res == 0)
-    {
-        if (execv(command[0], command + 1) < 0)
-        {
-            return false;
-        }
+        execv(command[0], command);
+        exit(1);
     }
     else
     {
-        wait(NULL);
+        waitpid(pid, &status_wait, 0);
     }
 
     va_end(args);
 
-    return true;
+    return (WIFEXITED(status_wait) && WEXITSTATUS(status_wait) == 0) ? true : false;
 }
 
 /**
@@ -105,7 +100,9 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
      *   The rest of the behaviour is same as do_exec()
      *
      */
-    int res = fork();
+
+    pid_t pid = fork();
+    int status_wait;
     int fd = open(outputfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 
     if (fd < 0)
@@ -113,27 +110,19 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
         return false;
     }
 
-    if (res < 0)
+    if (!pid)
     {
-        return false;
-    }
-    else if (res == 0)
-    {
-        if (dup2(fd, STDIN_FILENO) < 0)
-        {
-            return false;
-        }
-        if (execv(command[0], command + 1) < 0)
-        {
-            return false;
-        }
+        execv(command[0], command);
+        dup2(fd, STDOUT_FILENO);
+        exit(1);
     }
     else
     {
-        wait(NULL);
+        waitpid(pid, &status_wait, 0);
     }
+
     close(fd);
     va_end(args);
 
-    return true;
+    return (WIFEXITED(status_wait) && WEXITSTATUS(status_wait) == 0) ? true : false;
 }
